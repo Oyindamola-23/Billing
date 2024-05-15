@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QRx Close-Out Bill Analysis</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff; /* White background */
+            color: #000; /* Black text */
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        form {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #fff; /* White background */
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            position: relative; /* Make form position relative */
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input[type="file"],
+        input[type="date"],
+        input[type="submit"],
+        select {
+            width: calc(50% - 20px);
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        input[type="file"] {
+            width: 70%;
+            background-color: #fff; /* White background */
+            display: inline-block;
+        }
+
+        button.upload-btn {
+            width: 28%;
+            margin-left: 2%;
+            padding: 10px;
+            background-color: #3498db; /* Blue button */
+            color: #fff; /* White text */
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-sizing: border-box;
+            position: absolute;
+            right: 0;
+        }
+
+        button.upload-btn:hover {
+            background-color: #2980b9; /* Darker blue on hover */
+        }
+
+        input[type="submit"] {
+            background-color: #3498db; /* Blue button */
+            color: #fff; /* White text */
+            cursor: pointer;
+            font-size: 16px;
+            width: 100px; /* Adjust width */
+            margin-top: 10px; /* Add margin to top */
+        }
+
+        input[type="submit"]:hover {
+            background-color: #e66300; /* Darker orange on hover */
+        }
+
+        #csv_files {
+            margin-bottom: 20px;
+        }
+
+        .loader {
+            display: none;
+            border: 5px solid #f3f3f3; /* Light gray border */
+            border-top: 5px solid #3498db; /* Blue border on top */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 2s linear infinite; /* Spin animation */
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .back-button {
+            background-color: #3498db; /* Blue background */
+            color: #fff; /* White text */
+            cursor: pointer;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            position: absolute;
+            bottom: 20px;
+            right: 20px; /* Align to the right */
+        }
+
+        .back-button:hover {
+            background-color: #333; /* Darker black on hover */
+        }
+
+        .error-message {
+            color: red;
+            font-size: 14px;
+            margin-top: 5px;
+            display: block; /* Start from a new line */
+        }
+    </style>
+</head>
+<body>
+    <h1>QRx Close-Out Bill Analysis</h1>
+    <div id="loader" class="loader"></div>
+
+    <form id="analysisForm" action="/qrx-close-out" method="post" enctype="multipart/form-data" onsubmit="return validateForm()">
+        <label for="facility_name">Facility Name:<span style="color: red;">*</span></label>
+        <select id="facility_name" name="facility_name" required>
+            {% for facility in qrx_close_out_facilities_data %}
+                <option value="{{ facility }}">{{ facility }}</option>
+            {% endfor %}
+        </select>
+
+        <label for="billing_cycle">Billing Cycle (Start Date - End Date)<span style="color: red;">*</span>:</label>
+        <input type="date" id="start_date" name="start_date" onchange="setDefaultStartDate()" required> -
+        <input type="date" id="end_date" name="end_date" required>
+        
+        <div id="csv_files">
+            <label for="supply_data">Supply Data<span style="color: red;">*</span>:</label>
+            <input type="file" id="supply_data" name="supply_data" accept=".csv" required>
+            <button class="upload-btn" onclick="storeFileData('supply_data')">Upload</button>
+            
+            <label for="withdrawal_data">Withdrawal Data<span style="color: red;">*</span>:</label>
+            <input type="file" id="withdrawal_data" name="withdrawal_data" accept=".csv" required>
+            <button class="upload-btn" onclick="storeFileData('withdrawal_data')">Upload</button>
+            
+            <label for="dispensation_data">Dispensation Data<span style="color: red;">*</span>:</label>
+            <input type="file" id="dispensation_data" name="dispensation_data" accept=".csv" required>
+            <button class="upload-btn" onclick="storeFileData('dispensation_data')">Upload</button>
+            
+            <label for="pricing_file">Pricing File<span style="color: red;">*</span>:</label>
+            <input type="file" id="pricing_file" name="pricing_file" accept=".csv" required>
+            <button class="upload-btn" onclick="storeFileData('pricing_file')">Upload</button>
+            
+            <label for="last_count_data">Last Count Data:</label>
+            <input type="file" id="last_count_data" name="last_count_data" accept=".csv">
+            <button class="upload-btn" onclick="storeFileData('last_count_data')">Upload</button>
+            <span id="last_count_error" class="error-message"></span>
+
+            <label for="buyout_data">Buyout Data:</label>
+            <input type="file" id="buyout_data" name="buyout_data" accept=".csv">
+            <button class="upload-btn" onclick="storeFileData('buyout_data')">Upload</button>
+            <span id="buyout_error" class="error-message"></span>
+        </div>
+
+        <br> <!-- Add line break -->
+        <input type="submit" id="submitBtn" value="Submit">
+        <button class="back-button" onclick="goBack()">Back</button>
+        <span id="start_date_error" class="error-message"></span>
+    </form>
+
+    <script>
+        function goBack() {
+            window.history.back();
+        }
+
+        function validateForm() {
+            var lastCountData = document.getElementById("last_count_data").files.length;
+            var buyoutData = document.getElementById("buyout_data").files.length;
+
+            if (lastCountData > 0 && buyoutData > 0) {
+                document.getElementById("last_count_error").innerHTML = "Please upload either Last Count Data or Buyout Data, not both.";
+                return false;
+            }
+
+            return true;
+        }
+
+        function setDefaultStartDate() {
+            var startDateInput = document.getElementById("start_date");
+            if (!startDateInput.value) {
+                var currentDate = new Date();
+                var day = String(currentDate.getDate()).padStart(2, '0');
+                var month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                var year = currentDate.getFullYear();
+                startDateInput.value = year + '-' + month + '-' + day;
+            }
+        }
+
+        // Function to store file data in session storage
+        function storeFileData(inputId) {
+            var fileInput = document.getElementById(inputId);
+            var file = fileInput.files[0];
+            var reader = new FileReader();
+            
+            reader.onload = function(event) {
+                var fileData = event.target.result;
+                sessionStorage.setItem(inputId, fileData);
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Show loader when form is submitted
+        document.getElementById("analysisForm").addEventListener("submit", function() {
+            document.getElementById("loader").style.display = "block";
+        });
+    </script>
+</body>
+</html>

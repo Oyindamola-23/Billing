@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Select Billing Type</title>
+    <style>
+        /* CSS styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+        }
+        .container {
+            max-width: 600px;
+            margin: 100px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        /* Loader styles */
+        .loader {
+            border: 8px solid #f3f3f3; /* Light grey */
+            border-top: 8px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto; /* Center loader */
+            display: none; /* Hide loader by default */
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Select Billing Type</h1>
+        <select id="billing-type">
+            <option value="QRx Variance Bill">QRx Variance Bill</option>
+            <option value="PPMV Variance Bill">PPMV Variance Bill</option>
+            <option value="QRx Close-Out Bill">QRx Close-Out Bill</option>
+            <option value="PPMV Close-Out Bill">PPMV Close-Out Bill</option>
+        </select>
+        <button id="next-button">Next</button>
+        <!-- Loader -->
+        <div class="loader" id="loader"></div>
+    </div>
+    <script>
+        document.getElementById("next-button").addEventListener("click", function() {
+            var selectedBillingType = document.getElementById("billing-type").value;
+            console.log("Selected Billing Type:", selectedBillingType);
+            
+            // Make AJAX request to Flask server
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/process", true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.onreadystatechange = function () {
+                if (xhr.readyState === 4) {
+                    console.log("Response from Flask server:", xhr.status, xhr.responseText);
+                    if (xhr.status === 200) {
+                        // Redirect to the response URL based on selected billing type
+                        switch (selectedBillingType) {
+                            case "QRx Close-Out Bill":
+                                window.location.href = "/qrx-close-out";
+                                break;
+                            case "PPMV Variance Bill":
+                                window.location.href = "/ppmv-variance";
+                                break;
+                            case "QRx Variance Bill":
+                                window.location.href = "/qrx-variance";
+                                break;
+                            case "PPMV Close-Out Bill":
+                                window.location.href = "/ppmv-close-out";
+                                break;
+                            default:
+                                // Redirect to the index page if no valid billing type is selected
+                                window.location.href = "/";
+                                break;
+                        }
+                    }
+                }
+            };
+            xhr.send(JSON.stringify({ billing_type: selectedBillingType }));
+            // Disable the button to prevent multiple clicks
+            document.getElementById("next-button").disabled = true;
+        });
+    </script>    
+</body>
+</html>
